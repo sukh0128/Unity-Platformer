@@ -8,37 +8,36 @@ public class PlayerAttack : MonoBehaviour
 
     private Animator anim;
     private PlayerMovement playerMovement;
-    private float cooldownTimer = Mathf.Infinity;
-
+    // The Humble object is a dependency of the PlayerAttack class - the Non-Humble class.
+    private IPlayerAttackLogic attackLogic;
+    
     private void Awake()
     {
         anim = GetComponent<Animator>();
         playerMovement = GetComponent<PlayerMovement>();
+        // Create an instance of the Humble Object with the dependencies it needs.
+        attackLogic = new PlayerAttackLogic(attackCooldown);
+        attackLogic.Fireballs = fireballs;
     }
 
     private void Update()
     {
-        if (Input.GetMouseButton(0) && cooldownTimer > attackCooldown && playerMovement.canAttack())
-            Attack();
+        bool attackRequested = Input.GetMouseButton(0) && playerMovement.canAttack();
+        attackLogic.ProcessAttack(attackRequested);
 
-        cooldownTimer += Time.deltaTime;
+        int fireBallIndex;
+        if (attackLogic.ShouldAttack(out fireBallIndex))
+        {
+            Attack(fireBallIndex);
+        }
     }
 
-    private void Attack()
+    private void Attack(int fireballIndex)
     {
         anim.SetTrigger("attack");
-        cooldownTimer = 0;
 
-        fireballs[FindFireball()].transform.position = firePoint.position;
-        fireballs[FindFireball()].GetComponent<Projectile>().SetDirection(Mathf.Sign(transform.localScale.x));
+        fireballs[fireballIndex].transform.position = firePoint.position;
+        fireballs[fireballIndex].GetComponent<Projectile>().SetDirection(Mathf.Sign(transform.localScale.x));
     }
-    private int FindFireball()
-    {
-        for (int i = 0; i < fireballs.Length; i++)
-        {
-            if (!fireballs[i].activeInHierarchy)
-                return i;
-        }
-        return 0;
-    }
+
 }
